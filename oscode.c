@@ -11,11 +11,41 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <limits.h>
 
+
+/*********************/
+/******** JOB ********/        
+/*********************/
+struct job
+{
+    char *args[20];
+    int nbr;
+};
+
+void printJobs(struct cmd *job[]) {
+    int i = 0;
+    if (jobs[0]->nbr == 0) {
+        printf("No job in background.\n");
+    }
+    else{
+        printf("Jobs ID\t\tJobs\n----------------------------------------------------------\n");
+    }
+    while (jobs[i]->nbr != 0) {
+        printf("%i\t\t\t", jobs[i]->nbr);
+        int j = 0;
+        while(jobs[i]->args[j] !=  NULL){
+            printf("%s", history[i]->args[j]);
+            j++;
+        }
+        printf("\n");
+        i++;
+    }
+}
 
 /*************************/
 /******** HISTORY ********/        
-/************************/
+/*************************/
 
 struct cmd
 {
@@ -39,14 +69,11 @@ void addhistory(struct cmd *history[], char *args[], int nbr){
 
     // add the new command at the first empty spot in the history
     else{
-        printf("add\n");
         int j;
         for (j = 0; j < 20; j++) {
             history[nbr -1]->args[j] = args[j];
         }
-        printf("%i\n", nbr);
         history[nbr -1]->nbr = nbr;
-        printf("%i\n", history[0]->nbr);
     }
     return;
 }
@@ -71,6 +98,26 @@ int isNumber (char *string) {
        return 0;    //false
     else
        return 1;    //true
+}
+
+void printHistory(struct cmd *history[]) {
+    int i = 0;
+    if (history[0]->nbr == 0) {
+        printf("Nothing in history.\n");
+    }
+    else{
+        printf("History ID\t\tCommand\n----------------------------------------------------------\n");
+    }
+    while (history[i]->nbr != 0) {
+        printf("%i\t\t\t", history[i]->nbr);
+        int j = 0;
+        while(history[i]->args[j] !=  NULL){
+            printf("%s", history[i]->args[j]);
+            j++;
+        }
+        printf("\n");
+        i++;
+    }
 }
 
 
@@ -150,6 +197,8 @@ int main()
         }
         notInitialized = 0;
     }
+    
+    printf("\n-----------------------------------------\nWelcome!\nThis is a simple shell. \nEnter 'help' for more info.\n-----------------------------------------\n\n");
 
     while (1) {
         int cnt = getcmd("\n>> ", args, &bg); 
@@ -164,80 +213,106 @@ int main()
             printf("\nBackground not enabled \n");
 
         printf("\n\n");
-        
-        pid_t pid = fork();
-        
-        if ( pid != 0 ) {
 
-            /**** PARENT ****/
+        // HELP
+        if (strcmp(args[0], "help") == 0){
+            printf("This is a simple shell brought to you by Felix Dube\n\nIt keeps the last 10 commands in HISTORY.\nEnter 'history' to see the list of commands in history.\n\nProcess can be run un BACKGROUND using the '&' argument.\nEnter 'jobs' to see the list of process running in background\nEnter 'fg' and the process job number to bring a process in the forground.\n\n");
+        }
 
-            if (bg) {
-                main();
+        // PRINT HISTORY
+        else if (strcmp(args[0], "history") == 0) {
+            printHistory(history);
+        }
+         // PRESENT WORKING DIRECTORY
+        else if( strcmp(args[0], "pwd") == 0) {
+            *toBeSaved = 1;
+            char* cwd;
+            char buff[PATH_MAX + 1];
+
+            cwd = getcwd( buff, PATH_MAX + 1 );
+            if( cwd != NULL ) {
+                printf( "My working directory is %s.\n", cwd );
+            }
+            addhistory(history, args, historynbr);
+            historynbr++;
+            freecmd(args);
+        }
+        
+        // CHANGE DIRECTORY
+        else if( strcmp(args[0], "cd") == 0 ){
+            chdir(args[1]);
+            addhistory(history, args, historynbr);
+            historynbr++;
+            freecmd(args);
+       }
+
+        // JOBS
+        else if( strcmp(args[0], "jobs") == 0) {
+            //printJobs(jobs);
+            addhistory(history, args, historynbr);
+            historynbr++;
+            freecmd(args);
+        }
+
+        // FOREGROUND
+        else if( strcmp(args[0], "fg") == 0) {
+            *toBeSaved = 1;
+
+        }
+
+        // EXIT
+        else if ( strcmp(args[0], "exit") == 0){
+            exit(0);
+
+        }
+
+        else{
+            *toBeSaved = 1;
+
+            pid_t pid = fork();
+            
+            if ( pid != 0 ) {
+
+                /**** PARENT ****/
+
+                if (bg) {
+                    main();
+                }
+                else {
+                    waitpid(pid, &status, 0);
+                    // save the cmd if it was valid and not already in the history
+                    if(*toBeSaved){
+                        addhistory(history, args, historynbr);
+                        historynbr++;
+                    }
+                    freecmd(args);
+                }
             }
             else {
-                waitpid(pid, &status, 0);
 
-                // save the cmd if it was valid and not already in the history
-                if(*toBeSaved){
-                    printf("\n add history \n");
-                    addhistory(history, args, historynbr);
-                    historynbr++;
+                /**** CHILD ****/
+                // HISTORY
+                if (isNumber(args[0])) {
+                        int nbr =  *args[0] - 48;
+                        *toBeSaved = 0;
+                        // find the index of the command in the history, if it is there
+                        int index = searchhistory(history, nbr);
+                        if (index == -1){
+                            printf("***ERROR  command ID '%s' does not exist\n\n", args[0]);
+                            exit(0);
+                        }
+                        else {                
+                            int j;
+                            for (j = 0; j < 20; j++) {
+                                args[j] = history[index]->args[j];
+                            }
+                        }
                 }
-                freecmd(args);
-            }
-        }
-        else {
-
-            /**** CHILD ****/
-
-            // HISTORY
-            if (isNumber(args[0])) {
-                *toBeSaved = 0;
-
-                int nbr =  *args[0] - 48;
-
-                // find the index of the command in the history, if it is there
-                int index = searchhistory(history, nbr);
-                if (index == -1){
-                    printf("***ERROR  %s\n not in history\n\n", args[0]);
-                    exit(0);
+                // execute the command and make sure it is valid
+                if (execvp(args[0], args) == -1) {
+                    *toBeSaved = 0;
+                    printf("***ERROR  invalid command");
                 }
-                else {                
-                    int j;
-                    for (j = 0; j < 20; j++) {
-                        args[j] = history[index]->args[j];
-                    }
-                }
-            }
-
-            // CHANGE DIRECTORY
-            else if( args[0] == "cd"){
-
-           }
-
-            // PRESENT WORKING DIRECTORY
-            else if( args[0] == "pwd") {
-
-            }
-
-            // JOBS
-            else if( args[0] == "jobs") {
-
-            }
-
-            // FOREGROUND
-            else if( args[0] == "fg") {
-
-            }
-
-            else{
-                *toBeSaved = 1;
-            }
-
-            // execute the command and make sure it is valid
-            if (execvp(args[0], args) == -1) {
-                *toBeSaved = 0;
-                printf("***ERROR  invalid command");
             }
         }
     }
