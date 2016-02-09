@@ -1,7 +1,9 @@
 /***********************************************************************/
 // File: oscode.c
-// Description: Implement a simple shell
-// Features: History of the last 10 commands, 
+// Description: Implementation of a simple shell
+// Features:    History of the last 10 commands,
+//              background processes,
+//              output redirection
 // Date: February 2016
 // Author: Felix Dube 260533620
 /***********************************************************************/
@@ -12,47 +14,57 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <limits.h>
+#include <math.h>
 
 
 /*********************/
 /******** JOB ********/        
 /*********************/
-struct job
-{
-    char *args[20];
-    int nbr;
-};
+// struct job
+// {
+//     char *args[20];
+//     int pid;
+// };
 
-void printJobs(struct cmd *job[]) {
-    int i = 0;
-    if (jobs[0]->nbr == 0) {
-        printf("No job in background.\n");
-    }
-    else{
-        printf("Jobs ID\t\tJobs\n----------------------------------------------------------\n");
-    }
-    while (jobs[i]->nbr != 0) {
-        printf("%i\t\t\t", jobs[i]->nbr);
-        int j = 0;
-        while(jobs[i]->args[j] !=  NULL){
-            printf("%s", history[i]->args[j]);
-            j++;
-        }
-        printf("\n");
-        i++;
-    }
-}
+// void printJobs(struct cmd *job[]) {
+//     int i = 0;
+//     if (jobs[0]->nbr == 0) {
+//         printf("No job in background.\n");
+//     }
+//     else{
+//         printf("Jobs ID\t\tJobs\n----------------------------------------------------------\n");
+//     }
+//     while (jobs[i]->nbr != 0) {
+//         printf("%i\t\t\t", jobs[i]->nbr);
+//         int j = 0;
+//         while(jobs[i]->args[j] !=  NULL){
+//             printf("%s", history[i]->args[j]);
+//             j++;
+//         }
+//         printf("\n");
+//         i++;
+//     }
+// }
+
 
 /*************************/
 /******** HISTORY ********/        
 /*************************/
 
+// store the command allong with its history ID
 struct cmd
 {
     char *args[20];
     int nbr;
 };
 
+
+/*  addhistory  */
+// DESCRIPTION  add a specific cmd to the history    
+// INPUT        struct cmd *history[]   array in which the command need to be added
+//              char *args[]            command to be added
+//              int nbr                 history ID
+// RETURN       void
 void addhistory(struct cmd *history[], char *args[], int nbr){
 
     // delete the first element of history and add the new command at position 9
@@ -61,8 +73,9 @@ void addhistory(struct cmd *history[], char *args[], int nbr){
         for (j = 0; j< 9; j++){
             history[j] = history[j+1];
         }
+        history[9] = (struct cmd*) malloc(sizeof(struct cmd));
         for (j = 0; j < 20; j++) {
-            strcpy(history[9]->args[j], args[j]);
+            history[9]->args[j] = args[j];
         }
         history[9]->nbr = nbr;
     }
@@ -78,6 +91,12 @@ void addhistory(struct cmd *history[], char *args[], int nbr){
     return;
 }
 
+/*  searchhistory   */
+// DESCRIPTION  search for a specific history ID in the history
+// INPUT        struct cmd *history[]   history array to be search in
+//              int nbr                 history ID being search for
+// RETURN       if history ID found it returns the index of the cmd in the history array
+//              otherwise return -1
 int searchhistory(struct cmd *history[], int nbr) {
     int i;
     for (i = 0; i < 10; ++i)
@@ -90,7 +109,12 @@ int searchhistory(struct cmd *history[], int nbr) {
     return -1;
 }
 
-int isNumber (char *string) {
+/*  isnumber  */
+// DESCRIPTION  verify if a string is a number
+// INPUT        char *string    pointer to the string to be verified
+// RETURN       1 if the string is a number
+//              0 otherwise
+int isnumber (char *string) {
     int num;
     num = atoi( string );
  
@@ -100,7 +124,11 @@ int isNumber (char *string) {
        return 1;    //true
 }
 
-void printHistory(struct cmd *history[]) {
+/*  printhistory  */
+// DESCRIPTION  print all commands in the history
+// INPUT        struct cmd *history[]   pointer to the history array
+// RETURN       void
+void printhistory(struct cmd *history[]) {
     int i = 0;
     if (history[0]->nbr == 0) {
         printf("Nothing in history.\n");
@@ -108,11 +136,11 @@ void printHistory(struct cmd *history[]) {
     else{
         printf("History ID\t\tCommand\n----------------------------------------------------------\n");
     }
-    while (history[i]->nbr != 0) {
+    while (i < 10 && history[i]->nbr != 0) {
         printf("%i\t\t\t", history[i]->nbr);
         int j = 0;
         while(history[i]->args[j] !=  NULL){
-            printf("%s", history[i]->args[j]);
+            printf("%s\t", history[i]->args[j]);
             j++;
         }
         printf("\n");
@@ -120,12 +148,36 @@ void printHistory(struct cmd *history[]) {
     }
 }
 
+/* stringtoint */
+// DESCRIPTION  cast a string to int
+// INPUT        char* a     pointer to the string to be cast to int
+// RETURN       index       number that was in the string
+int stringtoint (char* a) {
+    int i;
+    int index = 0;
+    int add;
+    for (i = 0; i < strlen(a); i++){
+       add = a[i] -48;
+       printf("%i\n", add);
+       index +=  (add)*( pow( 10, (strlen(a) -i -1)));
+       printf("%i\n", index);
+    }
+    printf("%i\n", index);
+    return index;
+}
+
 
 
 /*************************/
 /******** COMMAND ********/
 /*************************/
-
+ 
+/* getcmd */
+// DESCRIPTION  get a command from the user 
+// INPUT        char *prompt        prompt string to be displayed to the user
+//              char *args[]        pointer to the array in which the command is saved
+//              int *background     pointer to the value of background
+// RETURN       i                   the number of argument in the command  
 int getcmd(char *prompt, char *args[], int *background)
 {
     int length, i = 0;
@@ -159,6 +211,10 @@ int getcmd(char *prompt, char *args[], int *background)
     return i;
 }
 
+/* freecmd */
+// DESCRIPTION      free the arguments array
+// INPUT            char *args[]    pointer to the argument array
+// RETURN           void
 void freecmd(char *args[]) {
     int i;
     for (i = 0; i < 20; ++i)
@@ -176,18 +232,20 @@ void freecmd(char *args[]) {
 
 int main()
 {
+    // command variable
     char *args[20];
     int i;
     for (i = 0; i < 20; ++i)
     {
         args[i] = NULL;
     }
+
+    // background variable
     int bg;
-    int status;
+
+    // history variables
     int historynbr = 1;
     int *toBeSaved = mmap(NULL, sizeof(int), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-
-    // allocate memory
     struct cmd **history =  mmap(NULL, sizeof(struct cmd), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
     int notInitialized = 1;
     while(notInitialized) {
@@ -203,16 +261,23 @@ int main()
     while (1) {
         int cnt = getcmd("\n>> ", args, &bg); 
 
-        int i;
-        for (i = 0; i < cnt; i++)
-            printf("\nArg[%d] = %s", i, args[i]);
+        // int i;
+        // for (i = 0; i < cnt; i++)
+        //     printf("\nArg[%d] = %s", i, args[i]);
 
-        if (bg)
-            printf("\nBackground enabled..\n");
-        else
-            printf("\nBackground not enabled \n");
+        // if (bg)
+        //     printf("\nBackground enabled..\n");
+        // else
+        //     printf("\nBackground not enabled \n");
 
-        printf("\n\n");
+        // printf("\n\n");
+
+
+
+        /**********************************/
+        /******** INTERNAL COMMAND ********/
+        /**********************************/
+
 
         // HELP
         if (strcmp(args[0], "help") == 0){
@@ -221,7 +286,8 @@ int main()
 
         // PRINT HISTORY
         else if (strcmp(args[0], "history") == 0) {
-            printHistory(history);
+            printhistory(history);
+            freecmd(args);
         }
          // PRESENT WORKING DIRECTORY
         else if( strcmp(args[0], "pwd") == 0) {
@@ -248,10 +314,10 @@ int main()
 
         // JOBS
         else if( strcmp(args[0], "jobs") == 0) {
-            //printJobs(jobs);
-            addhistory(history, args, historynbr);
-            historynbr++;
-            freecmd(args);
+            // //printJobs(jobs);
+            // addhistory(history, args, historynbr);
+            // historynbr++;
+            // freecmd(args);
         }
 
         // FOREGROUND
@@ -266,17 +332,27 @@ int main()
 
         }
 
-        else{
+
+
+        /**********************************/
+        /******** EXTERNAL COMMAND ********/
+        /**********************************/
+
+        else if (cnt != 0) {
             *toBeSaved = 1;
 
+            int status;
             pid_t pid = fork();
             
+
+
+            /**** PARENT ****/
+            // the parent process either wait for the child process or not 
+            // depending if the command is executed in background or not
+
             if ( pid != 0 ) {
-
-                /**** PARENT ****/
-
                 if (bg) {
-                    main();
+                    
                 }
                 else {
                     waitpid(pid, &status, 0);
@@ -288,12 +364,17 @@ int main()
                     freecmd(args);
                 }
             }
+
+
+
+            /**** CHILD ****/
+            // the command is exucuted in the child process
+
             else {
 
-                /**** CHILD ****/
                 // HISTORY
-                if (isNumber(args[0])) {
-                        int nbr =  *args[0] - 48;
+                if (isnumber(args[0])) {
+                        int nbr =  stringtoint(args[0]);
                         *toBeSaved = 0;
                         // find the index of the command in the history, if it is there
                         int index = searchhistory(history, nbr);
@@ -308,6 +389,19 @@ int main()
                             }
                         }
                 }
+
+                // change the output of the process when specified (eg. ls > out.txt)
+                if (args[1] != NULL && strcmp(args[1], ">") == 0){
+                    freopen(args[2], "w", stdout);
+                    args[1] = NULL;
+                    args[2] = NULL;
+                }
+
+                // close input output of the process if it is in background
+                if (bg) {
+                    fclose(stdin);
+                    fclose(stdout);
+                }
                 // execute the command and make sure it is valid
                 if (execvp(args[0], args) == -1) {
                     *toBeSaved = 0;
@@ -318,4 +412,4 @@ int main()
     }
 }
 
-
+//Wnohang
