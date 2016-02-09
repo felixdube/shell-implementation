@@ -20,31 +20,47 @@
 /*********************/
 /******** JOB ********/        
 /*********************/
-// struct job
-// {
-//     char *args[20];
-//     int pid;
-// };
+struct job
+{
+    char *args[20];
+    int pid;
+    struct job * next;
+};
 
-// void printJobs(struct cmd *job[]) {
-//     int i = 0;
-//     if (jobs[0]->nbr == 0) {
-//         printf("No job in background.\n");
-//     }
-//     else{
-//         printf("Jobs ID\t\tJobs\n----------------------------------------------------------\n");
-//     }
-//     while (jobs[i]->nbr != 0) {
-//         printf("%i\t\t\t", jobs[i]->nbr);
-//         int j = 0;
-//         while(jobs[i]->args[j] !=  NULL){
-//             printf("%s", history[i]->args[j]);
-//             j++;
-//         }
-//         printf("\n");
-//         i++;
-//     }
-// }
+void printjobs(struct job * head) {
+    int i = 0;
+    struct job * current = head;
+    if (current == NULL) {
+        printf("No job in background.\n");
+    }
+    else{
+        printf("Jobs PID\t\tJobs\n----------------------------------------------------------\n");
+    }
+    while (current != NULL) {
+        printf("%i\t\t", current->pid);
+
+        int j = 0;
+        while(current->args[j] !=  NULL){
+            printf("%s\t", current->args[j]);
+            j++;
+        }
+        printf("\n");
+        current = current->next;
+    }
+}
+
+void pushjob(struct job ** head, int pid, char *args[]) {
+    struct job * new_job;
+    new_job = malloc(sizeof(struct job));
+
+    new_job->pid = pid;
+    new_job->next = *head;
+    int j = 0 ;
+    for (j = 0; j < 20; j++) {
+        new_job->args[j] = args[j];
+    }
+    *head = new_job;
+}
 
 
 /*************************/
@@ -255,22 +271,26 @@ int main()
         }
         notInitialized = 0;
     }
+
+    // job variable
+    struct job * head = NULL;
+
     
     printf("\n-----------------------------------------\nWelcome!\nThis is a simple shell. \nEnter 'help' for more info.\n-----------------------------------------\n\n");
 
     while (1) {
         int cnt = getcmd("\n>> ", args, &bg); 
 
-        // int i;
-        // for (i = 0; i < cnt; i++)
-        //     printf("\nArg[%d] = %s", i, args[i]);
+        int i;
+        for (i = 0; i < cnt; i++)
+            printf("\nArg[%d] = %s", i, args[i]);
 
-        // if (bg)
-        //     printf("\nBackground enabled..\n");
-        // else
-        //     printf("\nBackground not enabled \n");
+        if (bg)
+            printf("\nBackground enabled..\n");
+        else
+            printf("\nBackground not enabled \n");
 
-        // printf("\n\n");
+        printf("\n\n");
 
 
 
@@ -314,10 +334,10 @@ int main()
 
         // JOBS
         else if( strcmp(args[0], "jobs") == 0) {
-            // //printJobs(jobs);
-            // addhistory(history, args, historynbr);
-            // historynbr++;
-            // freecmd(args);
+            printjobs(head);
+            addhistory(history, args, historynbr);
+            historynbr++;
+            freecmd(args);
         }
 
         // FOREGROUND
@@ -352,7 +372,9 @@ int main()
 
             if ( pid != 0 ) {
                 if (bg) {
-                    
+                    pushjob(&head, pid, args);
+                    sleep(1);
+                    freecmd(args);
                 }
                 else {
                     waitpid(pid, &status, 0);
@@ -397,11 +419,6 @@ int main()
                     args[2] = NULL;
                 }
 
-                // close input output of the process if it is in background
-                if (bg) {
-                    fclose(stdin);
-                    fclose(stdout);
-                }
                 // execute the command and make sure it is valid
                 if (execvp(args[0], args) == -1) {
                     *toBeSaved = 0;
