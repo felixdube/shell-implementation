@@ -298,9 +298,13 @@ int main()
         /******** INTERNAL COMMAND ********/
         /**********************************/
 
+        // if nothing is entered
+        if(cnt == 0){
+            // do nothing
+        }
 
         // HELP
-        if (strcmp(args[0], "help") == 0){
+        else if (strcmp(args[0], "help") == 0){
             printf("This is a simple shell brought to you by Felix Dube\n\nIt keeps the last 10 commands in HISTORY.\nEnter 'history' to see the list of commands in history.\n\nProcess can be run un BACKGROUND using the '&' argument.\nEnter 'jobs' to see the list of process running in background\nEnter 'fg' and the process job number to bring a process in the forground.\n\n");
         }
 
@@ -417,6 +421,17 @@ int main()
                     freopen(args[2], "w", stdout);
                     args[1] = NULL;
                     args[2] = NULL;
+
+                // close input output of the process if it is in background
+                //     if (bg) {
+                //         fclose(stdin);
+                //         fclose(sdterr);
+                //     }
+                // }
+                // else if (bg) {     
+                //     fclose(stdin);        
+                //     fclose(stdout);  
+                //     fclose(stderr); 
                 }
 
                 // execute the command and make sure it is valid
