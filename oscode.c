@@ -20,6 +20,8 @@
 /*********************/
 /******** JOB ********/        
 /*********************/
+
+// store in a linked list all the jobs in background, along with their PID
 struct job
 {
     char *args[20];
@@ -27,8 +29,43 @@ struct job
     struct job * next;
 };
 
+/* removejob */
+// DESCRIPTION  remove a job with a particuliar PID
+// INPUT        struct ** head          pointer to a pointer to the head of linked list of jobs
+//              int pid                 pid of the job to be removed from the linked list
+// RETURN       void
+void removejob(struct job ** head, int pid){
+    struct job * current = *head;
+    struct job * temp_job = NULL;
+
+    // if the job to be removed is the head
+    if (current->pid == pid){
+        printf("here\n" );
+        temp_job = current->next;
+        free(current);
+        current = temp_job;
+        return;
+    }
+
+    // if not we need to find where is the job
+    while(current->next != NULL && current->next->pid != pid){
+        current = current->next;
+    }
+    if(current->next != NULL){
+        temp_job = current->next;
+        current->next = temp_job->next;
+        free(temp_job);
+    }
+
+}
+
+/* printjobs */
+// DESCRIPTION  print all the jobs in back ground and remove the job that are done
+// INPUT        struct job * head       linked list of job to be printed and updated
+// RETURN       void
 void printjobs(struct job * head) {
     int i = 0;
+    int status;
     struct job * current = head;
     if (current == NULL) {
         printf("No job in background.\n");
@@ -45,10 +82,22 @@ void printjobs(struct job * head) {
             j++;
         }
         printf("\n");
+
+        int pid = current->pid;
         current = current->next;
+        waitpid(pid, &status, WNOHANG);
+        if(waitpid(pid, &status, WNOHANG) == -1){
+            removejob(&head, pid);
+        }
     }
 }
 
+/* pushjob */
+// DESCRIPTION  add a job to the linked list
+// INPUT        struct job ** head      pointer to a pointer to the head of linked list of jobs
+//              int PID                 pid of the job to be added
+//              char *args[]            command that the job is doing
+// RETURN       void
 void pushjob(struct job ** head, int pid, char *args[]) {
     struct job * new_job;
     new_job = malloc(sizeof(struct job));
@@ -248,6 +297,7 @@ void freecmd(char *args[]) {
 
 int main()
 {
+    int status;
     // command variable
     char *args[20];
     int i;
@@ -281,16 +331,16 @@ int main()
     while (1) {
         int cnt = getcmd("\n>> ", args, &bg); 
 
-        int i;
-        for (i = 0; i < cnt; i++)
-            printf("\nArg[%d] = %s", i, args[i]);
+        // int i;
+        // for (i = 0; i < cnt; i++)
+        //     printf("\nArg[%d] = %s", i, args[i]);
 
-        if (bg)
-            printf("\nBackground enabled..\n");
-        else
-            printf("\nBackground not enabled \n");
+        // if (bg)
+        //     printf("\nBackground enabled..\n");
+        // else
+        //     printf("\nBackground not enabled \n");
 
-        printf("\n\n");
+        // printf("\n\n");
 
 
 
@@ -315,7 +365,6 @@ int main()
         }
          // PRESENT WORKING DIRECTORY
         else if( strcmp(args[0], "pwd") == 0) {
-            *toBeSaved = 1;
             char* cwd;
             char buff[PATH_MAX + 1];
 
@@ -346,8 +395,7 @@ int main()
 
         // FOREGROUND
         else if( strcmp(args[0], "fg") == 0) {
-            *toBeSaved = 1;
-
+            waitpid(stringtoint(args[1]), &status, 0);
         }
 
         // EXIT
@@ -365,7 +413,6 @@ int main()
         else if (cnt != 0) {
             *toBeSaved = 1;
 
-            int status;
             pid_t pid = fork();
             
 
