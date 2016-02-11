@@ -74,6 +74,23 @@ int main()
         /******** INTERNAL COMMAND ********/
         /**********************************/
 
+        // HISTORY
+        if (cnt != 0 && isnumber(args[0])) {
+                int nbr =  stringtoint(args[0]);
+                *toBeSaved = 0;
+                // find the index of the command in the history, if it is there
+                int index = searchhistory(history, nbr);
+                if (index == -1){
+                    printf("***ERROR  command ID '%s' does not exist\n\n", args[0]);
+                }
+                else {                
+                    int j;
+                    for (j = 0; j < 20; j++) {
+                        args[j] = history[index]->args[j];
+                    }
+                }
+        }
+
         // if nothing is entered
         if(cnt == 0){
             // do nothing
@@ -153,7 +170,6 @@ int main()
             if ( pid != 0 ) {
                 if (bg) {
                     pushjob(&head, pid, args);
-                    sleep(1);
                     // save the cmd if it was valid and not already in the history
                     if(*toBeSaved){
                         addhistory(history, args, historynbr);
@@ -179,22 +195,8 @@ int main()
 
             else {
 
-                // HISTORY
-                if (isnumber(args[0])) {
-                        int nbr =  stringtoint(args[0]);
-                        *toBeSaved = 0;
-                        // find the index of the command in the history, if it is there
-                        int index = searchhistory(history, nbr);
-                        if (index == -1){
-                            printf("***ERROR  command ID '%s' does not exist\n\n", args[0]);
-                            exit(0);
-                        }
-                        else {                
-                            int j;
-                            for (j = 0; j < 20; j++) {
-                                args[j] = history[index]->args[j];
-                            }
-                        }
+                if (cnt != 0 && isnumber(args[0])){
+                    exit(0);
                 }
 
                 // change the output of the process when specified (eg. ls > out.txt)
