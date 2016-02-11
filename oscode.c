@@ -43,11 +43,9 @@ void removejob(struct job ** head, int pid){
 
     // if the job to be removed is the head
     if (current->pid == pid){
-        printf("here\n" );
-        // temp_job = current;
-        // current = current->next;
-        // free(temp_job);
-        *head = NULL;
+        temp_job = *head;
+        *head = (*head)->next;
+        free(temp_job);
         return;
     }
 
@@ -67,10 +65,10 @@ void removejob(struct job ** head, int pid){
 // DESCRIPTION  print all the jobs in back ground and remove the job that are done
 // INPUT        struct job * head       linked list of job to be printed and updated
 // RETURN       void
-void printjobs(struct job * head) {
+void printjobs(struct job ** head) {
     int i = 0;
     int status;
-    struct job * current = head;
+    struct job * current = *head;
     if (current == NULL) {
         printf("No job in background.\n");
     }
@@ -91,7 +89,7 @@ void printjobs(struct job * head) {
         current = current->next;
         waitpid(pid, &status, WNOHANG);
         if(waitpid(pid, &status, WNOHANG) == -1){
-            removejob(&head, pid);
+            removejob(head, pid);
         }
     }
 }
@@ -398,7 +396,7 @@ int main()
 
         // JOBS
         else if( strcmp(args[0], "jobs") == 0) {
-            printjobs(head);
+            printjobs(&head);
             addhistory(history, args, historynbr);
             historynbr++;
             initargs(args);
