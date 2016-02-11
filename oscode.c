@@ -16,6 +16,9 @@
 #include <limits.h>
 #include <math.h>
 
+// TODO:    Delete head job
+//          background in history
+//          args malloc
 
 /*********************/
 /******** JOB ********/        
@@ -41,9 +44,10 @@ void removejob(struct job ** head, int pid){
     // if the job to be removed is the head
     if (current->pid == pid){
         printf("here\n" );
-        temp_job = current->next;
-        free(current);
-        current = temp_job;
+        // temp_job = current;
+        // current = current->next;
+        // free(temp_job);
+        *head = NULL;
         return;
     }
 
@@ -223,11 +227,8 @@ int stringtoint (char* a) {
     int add;
     for (i = 0; i < strlen(a); i++){
        add = a[i] -48;
-       printf("%i\n", add);
        index +=  (add)*( pow( 10, (strlen(a) -i -1)));
-       printf("%i\n", index);
     }
-    printf("%i\n", index);
     return index;
 }
 
@@ -236,7 +237,16 @@ int stringtoint (char* a) {
 /*************************/
 /******** COMMAND ********/
 /*************************/
- 
+
+/* freecmd */
+// DESCRIPTION      free the line allocated by getline()
+// INPUT            char *line    pointer to the line
+// RETURN           void
+void freecmd(char *line) {
+    free(line);
+    return;
+}
+
 /* getcmd */
 // DESCRIPTION  get a command from the user 
 // INPUT        char *prompt        prompt string to be displayed to the user
@@ -273,14 +283,15 @@ int getcmd(char *prompt, char *args[], int *background)
         if (strlen(token) > 0)
             args[i++] = token;
     }
+    freecmd(line);
     return i;
 }
 
-/* freecmd */
-// DESCRIPTION      free the arguments array
-// INPUT            char *args[]    pointer to the argument array
-// RETURN           void
-void freecmd(char *args[]) {
+/* initargs */
+// DESCRIPTION  initialize all the arguments of the command to null
+// INPUT        char *args[]    pointer to the arguments of the command
+// RETURN       void
+void initargs(char *args[]){
     int i;
     for (i = 0; i < 20; ++i)
     {
@@ -361,7 +372,7 @@ int main()
         // PRINT HISTORY
         else if (strcmp(args[0], "history") == 0) {
             printhistory(history);
-            freecmd(args);
+            initargs(args);
         }
          // PRESENT WORKING DIRECTORY
         else if( strcmp(args[0], "pwd") == 0) {
@@ -374,7 +385,7 @@ int main()
             }
             addhistory(history, args, historynbr);
             historynbr++;
-            freecmd(args);
+            initargs(args);
         }
         
         // CHANGE DIRECTORY
@@ -382,7 +393,7 @@ int main()
             chdir(args[1]);
             addhistory(history, args, historynbr);
             historynbr++;
-            freecmd(args);
+            initargs(args);
        }
 
         // JOBS
@@ -390,12 +401,15 @@ int main()
             printjobs(head);
             addhistory(history, args, historynbr);
             historynbr++;
-            freecmd(args);
+            initargs(args);
         }
 
         // FOREGROUND
         else if( strcmp(args[0], "fg") == 0) {
+            addhistory(history, args, historynbr);
+            historynbr++;
             waitpid(stringtoint(args[1]), &status, 0);
+            initargs(args);
         }
 
         // EXIT
@@ -425,7 +439,12 @@ int main()
                 if (bg) {
                     pushjob(&head, pid, args);
                     sleep(1);
-                    freecmd(args);
+                    // save the cmd if it was valid and not already in the history
+                    if(*toBeSaved){
+                        addhistory(history, args, historynbr);
+                        historynbr++;
+                    }
+                    initargs(args);
                 }
                 else {
                     waitpid(pid, &status, 0);
@@ -434,7 +453,7 @@ int main()
                         addhistory(history, args, historynbr);
                         historynbr++;
                     }
-                    freecmd(args);
+                    initargs(args);
                 }
             }
 
