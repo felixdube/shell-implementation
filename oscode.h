@@ -120,3 +120,10 @@ int getcmd(char *prompt, char *args[], int *background);
     */
 void initargs(char *args[]);
 
+/**
+    * @brief    check if a command output is redirected
+    * @param    args:   pointer to the arguments of the command
+    * @retval   the position of the sign ">" in the array, -1 if not found
+    */
+int isredirected(char * args[]);
+

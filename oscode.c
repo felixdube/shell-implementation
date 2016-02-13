@@ -200,20 +200,11 @@ int main()
                 }
 
                 // change the output of the process when specified (eg. ls > out.txt)
-                if (args[1] != NULL && strcmp(args[1], ">") == 0){
-                    freopen(args[2], "w", stdout);
-                    args[1] = NULL;
-                    args[2] = NULL;
-
-                // close input output of the process if it is in background
-                //     if (bg) {
-                //         fclose(stdin);
-                //         fclose(sdterr);
-                //     }
-                // }
-                // else if (bg) {     
-                //     fclose(stdin);         
-                //     fclose(stderr); 
+                int argNbr;
+                if ((argNbr = isredirected(args)) > 0){
+                    freopen(args[argNbr+1], "w", stdout);
+                    args[argNbr] = NULL;
+                    args[argNbr+1] = NULL;
                 }
 
                 // execute the command and make sure it is valid
@@ -435,5 +426,16 @@ void initargs(char *args[]){
         args[i] = NULL;
     }
     return;
+}
+
+int isredirected(char * args[]){
+    int i = 0;
+    while(args[i] != NULL){
+        if (strcmp(args[i],  ">") == 0){
+            return i;
+        }
+        i++;
+    }
+    return -1;
 }
 
