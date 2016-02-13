@@ -66,7 +66,7 @@ int main()
         // else
         //     printf("\nBackground not enabled \n");
 
-        // printf("\n\n");
+        printf("\n");
 
 
 
@@ -87,6 +87,13 @@ int main()
                     int j;
                     for (j = 0; j < 20; j++) {
                         args[j] = history[index]->args[j];
+                    }
+
+                    //check is it was in backgorund
+                    int bgIndex;
+                    if ((bgIndex = isbg(args)) > 0) {
+                        bg = 1;
+                        args[bgIndex] = NULL;
                     }
                 }
         }
@@ -140,7 +147,12 @@ int main()
         else if( strcmp(args[0], "fg") == 0) {
             addhistory(history, args, historynbr);
             historynbr++;
-            waitpid(stringtoint(args[1]), &status, 0);
+            if (jobexist(head, stringtoint(args[1]))){
+                waitpid(stringtoint(args[1]), &status, 0);
+            }
+            else{
+                printf("***ERROR  job PID '%s' does not exist\n\n", args[1]);
+            }
             initargs(args);
         }
 
@@ -172,6 +184,11 @@ int main()
                     pushjob(&head, pid, args);
                     // save the cmd if it was valid and not already in the history
                     if(*toBeSaved){
+                        int i = 0;
+                        while(args[i] != NULL){
+                            i++;
+                        }
+                        args[i] = "&";
                         addhistory(history, args, historynbr);
                         historynbr++;
                     }
@@ -210,7 +227,7 @@ int main()
                 // execute the command and make sure it is valid
                 if (execvp(args[0], args) == -1) {
                     *toBeSaved = 0;
-                    printf("***ERROR  invalid command");
+                    printf("***ERROR  invalid command\n");
                 }
             }
         }
@@ -254,11 +271,25 @@ void printjobs(struct job ** head) {
         printf("No job in background.\n");
     }
     else{
-        printf("Jobs PID\t\tJobs\n----------------------------------------------------------\n");
+        printf("Jobs PID\tStatus\t\tJobs\n----------------------------------------------------------\n");
     }
+
     while (current != NULL) {
+
+        // print pid
         printf("%i\t\t", current->pid);
 
+        // print status
+        int pid = current->pid;
+        waitpid(pid, &status, WNOHANG);
+        if(waitpid(pid, &status, WNOHANG) == -1){
+            printf("Done\t\t");
+        }
+        else {
+            printf("Working\t\t");
+        }
+
+        // print cmd
         int j = 0;
         while(current->args[j] !=  NULL){
             printf("%s\t", current->args[j]);
@@ -268,9 +299,7 @@ void printjobs(struct job ** head) {
 
         // check if the process is terminated
         // if it is it is removed from the jobs list
-        int pid = current->pid;
         current = current->next;
-        waitpid(pid, &status, WNOHANG);
         if(waitpid(pid, &status, WNOHANG) == -1){
             removejob(head, pid);
         }
@@ -288,6 +317,17 @@ void pushjob(struct job ** head, int pid, char *args[]) {
         new_job->args[j] = args[j];
     }
     *head = new_job;
+}
+
+int jobexist(struct job * head, int pid){
+    struct job * current = head;
+
+    while(current != NULL){
+        if (current->pid == pid){
+            return 1;
+        }
+    }
+    return 0;
 }
 
 
@@ -376,6 +416,17 @@ int stringtoint (char* a) {
         index +=  (add)*( pow( 10, (strlen(a) -i -1)));
     }
     return index;
+}
+
+int isbg(char * args[]){
+    int i = 0;
+    while(args[i] != NULL){
+        if (strcmp(args[i], "&") == 0){
+            return i;
+        }
+        i++;
+    }
+    return -1;
 }
 
 

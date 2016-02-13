@@ -46,6 +46,14 @@ void printjobs(struct job ** head);
     */
 void pushjob(struct job ** head, int pid, char *args[]);
 
+/**
+    * @brief    check if a specific job PID exist
+    * @param    head:   pointer to a pointer to the head of linked list of jobs
+    * @param    pid:    pid of the job being search for
+    * @retval   1 if the pid is found, 0 otherwise
+    */
+int jobexist(struct job * head, int pid);
+
 
 /* HISTORY -----------------------------------------------------------------------*/
 
@@ -93,6 +101,13 @@ void printhistory(struct cmd *history[]);
     * @retval   number that was in the string
     */
 int stringtoint (char* a);
+
+/**
+    * @brief    check is a cmd is a background cmd
+    * @param    args:   arguments of the cmd
+    * @retval   return the index of the symbol "&" if found, -1 otherwise
+    */
+int isbg(char * args[]);
 
 
 /* COMMAND -----------------------------------------------------------------------*/

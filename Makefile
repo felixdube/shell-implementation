@@ -1,7 +1,7 @@
-all: felish
+all: shell
 
-felish: oscode.c
-	gcc oscode.c -lm -o felish.o
+shell: oscode.c
+	gcc oscode.c -lm -o shell.o
 
 clean:
-	rm -rf *.o felish
+	rm -rf *.o shell
