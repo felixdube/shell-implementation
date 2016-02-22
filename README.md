@@ -1,2 +1,2 @@
-#ECSE 427
-Operating Systems
+#Shell
+Implement a simple shell for ECSE 427 - Operating System
